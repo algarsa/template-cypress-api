@@ -22,4 +22,38 @@ describe('Products api', () => {
                 })
         });
     });
+    context('POST /catalog/api/v1/product/image/{userId}/{source}/{color}', () => {
+        it('Deve fazer upload de imagem via API', () => {
+            
+            const data = new FormData();
+            const fileToUpload = "arara.jpeg";
+            const aliasName = "imageUploadRequest";
+            const APIurl = 'https://www.advantageonlineshopping.com/api/v1/product/image/137003825/1249?product_id=9'
+            const authorization = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJ3d3cuYWR2YW50YWdlb25saW5lc2hvcHBpbmcuY29tIiwidXNlcklkIjoxMzcwMDM4MjUsInN1YiI6ImFsaWNlc2FudG9zIiwicm9sZSI6IkFETUlOIn0.vvIAz5LeoauE_jUm46gjem9BAgmQreMsVXgasW3t-ac"
+            data.append("hasHeader", "true");
+
+            cy.intercept({
+                method: 'POST',
+                url: APIurl
+            })
+                .as(aliasName)
+                .window()
+                .then((win) => {
+                    cy.fixture(fileToUpload, "binary")
+                    .then((binary) => Cypress.Blob.binaryStringToBlob(binary))
+                    .then((blob) => {
+                        const xhr = new win.XMLHttpRequest();
+                        data.set("fetchImage", blob, fileToUpload);
+                        xhr.open("POST", APIurl);
+                        xhr.setRequestHeader("Authorization", authorization);
+                        xhr.send(data);
+                    });
+                });
+                
+                cy.wait('@imageUploadRequest').then(({response}) => {
+                    expect(response.statusCode).to.eq(200);
+                    expect(response.body).to.contain.property("imageId")
+                })
+        });
+    });
 });
